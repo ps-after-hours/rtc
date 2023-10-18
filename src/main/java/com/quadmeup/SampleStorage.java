@@ -44,6 +44,10 @@ public class SampleStorage {
         stringList.remove(str);
     }
     
+    public synchronized int size() {
+        return stringList.size();
+    }
+
     public synchronized void lock(SourceType sourceType) {
         lockMap.put(sourceType, true);
     }
@@ -74,6 +78,10 @@ public class SampleStorage {
         } else {
             return null;
         }
+    }
+
+    public synchronized int duplicateSize() {
+        return duplicateList.size();
     }
 
 }

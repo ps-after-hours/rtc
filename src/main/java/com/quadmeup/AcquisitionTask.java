@@ -2,8 +2,6 @@ package com.quadmeup;
 
 import java.io.IOException;
 
-import javax.swing.text.html.parser.Entity;
-
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;

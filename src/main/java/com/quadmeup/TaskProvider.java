@@ -63,22 +63,41 @@ public class TaskProvider {
         return sourceType;
     }
 
-    public AcquisitionTask getSourceTask() throws DoneException {
+    public synchronized Task getTask() throws DoneException {
         
-        if (sampleStorage.isDone(SourceType.A) && sampleStorage.isDone(SourceType.B)) {
-            //We are done, no more tasks
+        if (
+            sampleStorage.isDone(SourceType.A) && 
+            sampleStorage.isDone(SourceType.B) &&
+            sampleStorage.duplicateSize() == 0 &&
+            sampleStorage.size() == 0
+        ) {
+            //We are done, no more tasks, time to end
             throw new DoneException();
         }
 
-        final SourceType sourceType = getWithLockStatus();
+        if (sampleStorage.duplicateSize() > 0) {
+            //In first order we send duplicates
+            return new SinkTask(SINK_URL, SinkType.JOINED, sampleStorage, sampleStorage.getDuplicate());
+        } else if (!sampleStorage.isDone(SourceType.A) || !sampleStorage.isDone(SourceType.B)) {
+            //Then, we run data acquisition
+            final SourceType sourceType = getWithLockStatus();
 
-        //This can be done in a more flexible way.
-        if (SourceType.A == sourceType) {
-            return new AcquisitionTask(sampleStorage, SOURCE_A_URL, SourceType.A, new JsonParser());
+            //This can be done in a more flexible way if there will be more sources
+            if (SourceType.A == sourceType) {
+                return new AcquisitionTask(sampleStorage, SOURCE_A_URL, SourceType.A, new JsonParser());
+            } else {
+                return new AcquisitionTask(sampleStorage, SOURCE_B_URL, SourceType.B, new XmlParser());
+            }
         } else {
-            return new AcquisitionTask(sampleStorage, SOURCE_B_URL, SourceType.B, new XmlParser());
+            // if we are still not done, everything that is left are orphaned samples
+
+            String sample = sampleStorage.get();
+            if (sample != null) {
+                return new SinkTask(SINK_URL, SinkType.ORPHANED, sampleStorage, sample);
+            }
         }
-        
+
+        throw new DoneException();
     }
 
     public SinkTask getSinkTask(SinkType sinkType, String id) {

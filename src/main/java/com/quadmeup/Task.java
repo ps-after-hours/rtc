@@ -1,5 +1,5 @@
 package com.quadmeup;
 
-public class Task {
+abstract public class Task implements Runnable{
     
 }
